@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    compileSdk 33
+
+    defaultConfig {
+        applicationId "org.future2d.engine"
+        minSdk 24
+        targetSdk 33
+        versionCode 1
+        versionName "0.1"
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++20 -O2"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('../../native/CMakeLists.txt')
+            version "3.22"
+        }
+    }
+
+    sourceSets.main {
+        manifest.srcFile 'src/main/AndroidManifest.xml'
+    }
+}
+
+dependencies {}

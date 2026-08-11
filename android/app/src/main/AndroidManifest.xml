@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.future2d.engine">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
+
+    <application android:label="Future2D">
+        <activity android:name="android.app.NativeActivity"
+            android:label="Future2D"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="true">
+            <meta-data android:name="android.app.lib_name" android:value="future2d" />
+        </activity>
+    </application>
+</manifest>
