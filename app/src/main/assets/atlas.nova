@@ -1,0 +1,8 @@
+NOVA_ATLAS 1
+image|sprites.png
+size|256|64
+# name|x|y|width|height|pivotX|pivotY
+region|idle_0|0|0|64|64|0.5|0.5
+region|idle_1|64|0|64|64|0.5|0.5
+region|idle_2|128|0|64|64|0.5|0.5
+region|idle_3|192|0|64|64|0.5|0.5
