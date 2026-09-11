@@ -5,9 +5,17 @@ import android.os.Bundle
 import android.view.WindowManager
 
 class MainActivity : Activity() {
+    private lateinit var editor: NovaEditorView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        setContentView(OpenGLGameView(this))
+        editor = NovaEditorView(this)
+        setContentView(editor)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        editor.invalidate()
     }
 }
