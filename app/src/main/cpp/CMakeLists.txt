@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(nova_engine)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_library(nova_engine SHARED native_engine.cpp)
+target_compile_options(nova_engine PRIVATE -Wall -Wextra -O2)
