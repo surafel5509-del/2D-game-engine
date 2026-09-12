@@ -6,74 +6,21 @@ import kotlin.math.cos
 import kotlin.math.round
 import kotlin.math.sin
 
-/** Production render boundary for the 2D editor/runtime. */
 data class RenderV2Vec2(var x:Float=0f,var y:Float=0f)
-data class RenderV2Rect(val x:Float,val y:Float,val width:Float,val height:Float){
-    fun contains(px:Float,py:Float)=px>=x&&px<=x+width&&py>=y&&py<=y+height
-    fun overlaps(o:RenderV2Rect)=x<o.x+o.width&&x+width>o.x&&y<o.y+o.height&&y+height>o.y
-}
+data class RenderV2Rect(val x:Float,val y:Float,val width:Float,val height:Float){fun contains(px:Float,py:Float)=px>=x&&px<=x+width&&py>=y&&py<=y+height;fun overlaps(o:RenderV2Rect)=x<o.x+o.width&&x+width>o.x&&y<o.y+o.height&&y+height>o.y}
 data class RenderV2Color(var r:Float=1f,var g:Float=1f,var b:Float=1f,var a:Float=1f){fun clamped()=copy(r.coerceIn(0f,1f),g.coerceIn(0f,1f),b.coerceIn(0f,1f),a.coerceIn(0f,1f))}
 data class RenderV2Transform(var x:Float=0f,var y:Float=0f,var rotation:Float=0f,var scaleX:Float=1f,var scaleY:Float=1f)
 data class RenderV2Sprite(var texture:String?=null,var width:Float=32f,var height:Float=32f,var pivotX:Float=.5f,var pivotY:Float=.5f,var flipX:Boolean=false,var flipY:Boolean=false,val uv:RenderV2Uv=RenderV2Uv())
 data class RenderV2Uv(val u0:Float=0f,val v0:Float=0f,val u1:Float=1f,val v1:Float=1f)
 data class RenderV2Material(val key:String="sprite",val blend:RenderV2Blend=RenderV2Blend.ALPHA,val texture:String?=null,val color:RenderV2Color=RenderV2Color())
-enum class RenderV2Blend{OPAQUE,ALPHA,ADDITIVE,MULTIPLY}
-enum class RenderV2Sort{LAYER_Z,Y,MATERIAL,TEXTURE}
+enum class RenderV2Blend{OPAQUE,ALPHA,ADDITIVE,MULTIPLY};enum class RenderV2Sort{LAYER_Z,Y,MATERIAL,TEXTURE}
 data class RenderV2Command(val entityId:Int,val transform:RenderV2Transform,val sprite:RenderV2Sprite,val material:RenderV2Material,val layer:Int=0,val z:Int=0,val visible:Boolean=true)
-
 data class RenderV2FrameStats(val frame:Long,val submitted:Int,val visible:Int,val culled:Int,val batches:Int,val drawCalls:Int)
-
-class RenderV2Camera{
-    val position=RenderV2Vec2();var zoom=1f;var rotation=0f;var width=1f;var height=1f;var pixelSnap=false;var minZoom=.05f;var maxZoom=32f
-    fun resize(w:Int,h:Int){width=w.coerceAtLeast(1).toFloat();height=h.coerceAtLeast(1).toFloat()}
-    fun setZoom(v:Float){zoom=v.coerceIn(minZoom,maxZoom)}
-    fun screenToWorld(sx:Float,sy:Float):RenderV2Vec2{val dx=(sx-width*.5f)/zoom;val dy=(sy-height*.5f)/zoom;val c=cos(rotation);val s=sin(rotation);val x=dx*c-dy*s+position.x;val y=dx*s+dy*c+position.y;return if(pixelSnap)RenderV2Vec2(round(x),round(y))else RenderV2Vec2(x,y)}
-    fun worldToScreen(wx:Float,wy:Float):RenderV2Vec2{val dx=wx-position.x;val dy=wy-position.y;val c=cos(rotation);val s=sin(rotation);return RenderV2Vec2((dx*c+dy*s)*zoom+width*.5f,(-dx*s+dy*c)*zoom+height*.5f)}
-    fun bounds()=RenderV2Rect(position.x-width/(2f*zoom),position.y-height/(2f*zoom),width/zoom,height/zoom)
-}
-
-class RenderV2Queue(private val capacity:Int=8192){
-    private val items=ArrayList<RenderV2Command>(capacity);var sortMode=RenderV2Sort.LAYER_Z;var culled=0;private set
-    fun clear(){items.clear();culled=0}
-    fun submit(c:RenderV2Command){if(c.visible&&items.size<capacity)items+=c}
-    fun size()=items.size
-    fun items():List<RenderV2Command>=items
-    fun sort(){when(sortMode){RenderV2Sort.LAYER_Z->items.sortWith(compareBy<RenderV2Command>{it.layer}.thenBy{it.z}.thenBy{it.material.key}.thenBy{it.material.texture});RenderV2Sort.Y->items.sortWith(compareBy<RenderV2Command>{it.transform.y}.thenBy{it.z});RenderV2Sort.MATERIAL->items.sortWith(compareBy<RenderV2Command>{it.material.key}.thenBy{it.material.texture}.thenBy{it.z});RenderV2Sort.TEXTURE->items.sortWith(compareBy<RenderV2Command>{it.material.texture}.thenBy{it.material.key}.thenBy{it.z})}}
-    fun cull(camera:RenderV2Camera){val view=camera.bounds();val it=items.iterator();while(it.hasNext()){val c=it.next();val w=abs(c.sprite.width*c.transform.scaleX);val h=abs(c.sprite.height*c.transform.scaleY);val r=RenderV2Rect(c.transform.x-w*c.sprite.pivotX,c.transform.y-h*c.sprite.pivotY,w,h);if(!r.overlaps(view)){it.remove();culled++}}}
-}
-
-class RenderV2TextureCache(private val limit:Int=512){
-    private val values=LinkedHashMap<String,Int>(16,.75f,true);private val pinned=HashSet<String>()
-    fun put(key:String,glId:Int){values[key]=glId;trim()};fun get(key:String)=values[key];fun pin(key:String){pinned+=key};fun unpin(key:String){pinned-=key};fun clear(){values.clear();pinned.clear()};fun size()=values.size
-    private fun trim(){val it=values.entries.iterator();while(values.size>limit&&it.hasNext()){val e=it.next();if(e.key !in pinned)it.remove()}}
-}
-
-class RenderV2StateCache{
-    private var program=-1;private var texture=-1;private var blend=RenderV2Blend.OPAQUE
-    var programBinds=0;private set;var textureBinds=0;private set
-    fun reset(){program=-1;texture=-1;blend=RenderV2Blend.OPAQUE;programBinds=0;textureBinds=0}
-    fun program(id:Int){if(program==id)return;GLES20.glUseProgram(id);program=id;programBinds++}
-    fun texture(id:Int){if(texture==id)return;GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,id);texture=id;textureBinds++}
-    fun blend(mode:RenderV2Blend){if(mode==blend)return;blend=mode;when(mode){RenderV2Blend.OPAQUE->GLES20.glDisable(GLES20.GL_BLEND);RenderV2Blend.ALPHA->{GLES20.glEnable(GLES20.GL_BLEND);GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,GLES20.GL_ONE_MINUS_SRC_ALPHA)};RenderV2Blend.ADDITIVE->{GLES20.glEnable(GLES20.GL_BLEND);GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,GLES20.GL_ONE)};RenderV2Blend.MULTIPLY->{GLES20.glEnable(GLES20.GL_BLEND);GLES20.glBlendFunc(GLES20.GL_DST_COLOR,GLES20.GL_ZERO)}}}
-}
-
-class RenderV2Batcher(private val maxSprites:Int=2048){
-    private var count=0;private var texture="";private var material="";var batches=0;private set;var sprites=0;private set
-    fun begin(){count=0;texture="";material="";batches=0;sprites=0}
-    fun add(c:RenderV2Command){val nextTexture=c.material.texture?:c.sprite.texture.orEmpty();if(count>0&&(nextTexture!=texture||c.material.key!=material))flush();if(count>=maxSprites)flush();texture=nextTexture;material=c.material.key;count++;sprites++}
-    fun flush(){if(count==0)return;batches++;count=0}
-    fun end(){flush()}
-}
-
+class RenderV2Camera{val position=RenderV2Vec2();var zoom=1f;var rotation=0f;var width=1f;var height=1f;var pixelSnap=false;var minZoom=.05f;var maxZoom=32f;fun resize(w:Int,h:Int){width=w.coerceAtLeast(1).toFloat();height=h.coerceAtLeast(1).toFloat()};fun setZoom(v:Float){zoom=v.coerceIn(minZoom,maxZoom)};fun screenToWorld(sx:Float,sy:Float):RenderV2Vec2{val dx=(sx-width*.5f)/zoom;val dy=(sy-height*.5f)/zoom;val c=cos(rotation);val s=sin(rotation);val x=dx*c-dy*s+position.x;val y=dx*s+dy*c+position.y;return if(pixelSnap)RenderV2Vec2(round(x),round(y))else RenderV2Vec2(x,y)};fun worldToScreen(wx:Float,wy:Float):RenderV2Vec2{val dx=wx-position.x;val dy=wy-position.y;val c=cos(rotation);val s=sin(rotation);return RenderV2Vec2((dx*c+dy*s)*zoom+width*.5f,(-dx*s+dy*c)*zoom+height*.5f)};fun bounds()=RenderV2Rect(position.x-width/(2f*zoom),position.y-height/(2f*zoom),width/zoom,height/zoom)}
+class RenderV2Queue(private val capacity:Int=8192){private val items=ArrayList<RenderV2Command>(capacity);var sortMode=RenderV2Sort.LAYER_Z;var culled=0;private set;fun clear(){items.clear();culled=0};fun submit(c:RenderV2Command){if(c.visible&&items.size<capacity)items+=c};fun size()=items.size;fun items():List<RenderV2Command> = items;fun sort(){when(sortMode){RenderV2Sort.LAYER_Z->items.sortWith(compareBy<RenderV2Command>{it.layer}.thenBy{it.z}.thenBy{it.material.key}.thenBy{it.material.texture});RenderV2Sort.Y->items.sortWith(compareBy<RenderV2Command>{it.transform.y}.thenBy{it.z});RenderV2Sort.MATERIAL->items.sortWith(compareBy<RenderV2Command>{it.material.key}.thenBy{it.material.texture}.thenBy{it.z});RenderV2Sort.TEXTURE->items.sortWith(compareBy<RenderV2Command>{it.material.texture}.thenBy{it.material.key}.thenBy{it.z})}};fun cull(camera:RenderV2Camera){val view=camera.bounds();val it=items.iterator();while(it.hasNext()){val c=it.next();val w=abs(c.sprite.width*c.transform.scaleX);val h=abs(c.sprite.height*c.transform.scaleY);val r=RenderV2Rect(c.transform.x-w*c.sprite.pivotX,c.transform.y-h*c.sprite.pivotY,w,h);if(!r.overlaps(view)){it.remove();culled++}}}}
+class RenderV2TextureCache(private val limit:Int=512){private val values=LinkedHashMap<String,Int>(16,.75f,true);private val pinned=HashSet<String>();fun put(key:String,glId:Int){values[key]=glId;trim()};fun get(key:String)=values[key];fun pin(key:String){pinned+=key};fun unpin(key:String){pinned-=key};fun clear(){values.clear();pinned.clear()};fun size()=values.size;private fun trim(){val it=values.entries.iterator();while(values.size>limit&&it.hasNext()){val e=it.next();if(e.key !in pinned)it.remove()}}}
+class RenderV2StateCache{private var program=-1;private var texture=-1;private var blend=RenderV2Blend.OPAQUE;var programBinds=0;private set;var textureBinds=0;private set;fun reset(){program=-1;texture=-1;blend=RenderV2Blend.OPAQUE;programBinds=0;textureBinds=0};fun program(id:Int){if(program==id)return;GLES20.glUseProgram(id);program=id;programBinds++};fun texture(id:Int){if(texture==id)return;GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,id);texture=id;textureBinds++};fun blend(mode:RenderV2Blend){if(mode==blend)return;blend=mode;when(mode){RenderV2Blend.OPAQUE->GLES20.glDisable(GLES20.GL_BLEND);RenderV2Blend.ALPHA->{GLES20.glEnable(GLES20.GL_BLEND);GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,GLES20.GL_ONE_MINUS_SRC_ALPHA)};RenderV2Blend.ADDITIVE->{GLES20.glEnable(GLES20.GL_BLEND);GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA,GLES20.GL_ONE)};RenderV2Blend.MULTIPLY->{GLES20.glEnable(GLES20.GL_BLEND);GLES20.glBlendFunc(GLES20.GL_DST_COLOR,GLES20.GL_ZERO)}}}}
+class RenderV2Batcher(private val maxSprites:Int=2048){private var count=0;private var texture="";private var material="";var batches=0;private set;var sprites=0;private set;fun begin(){count=0;texture="";material="";batches=0;sprites=0};fun add(c:RenderV2Command){val nextTexture=c.material.texture?:c.sprite.texture.orEmpty();if(count>0&&(nextTexture!=texture||c.material.key!=material))flush();if(count>=maxSprites)flush();texture=nextTexture;material=c.material.key;count++;sprites++};fun flush(){if(count==0)return;batches++;count=0};fun end(){flush()}}
 class RenderV2Picker(private val camera:RenderV2Camera){fun pick(commands:List<RenderV2Command>,sx:Float,sy:Float):Int?{val p=camera.screenToWorld(sx,sy);return commands.asReversed().firstOrNull{val s=it.sprite;val w=abs(s.width*it.transform.scaleX);val h=abs(s.height*it.transform.scaleY);RenderV2Rect(it.transform.x-w*s.pivotX,it.transform.y-h*s.pivotY,w,h).contains(p.x,p.y)}?.entityId}}
 class RenderV2ViewportTools(private val camera:RenderV2Camera){fun pan(dx:Float,dy:Float){camera.position.x-=dx/camera.zoom;camera.position.y-=dy/camera.zoom};fun zoomAt(sx:Float,sy:Float,f:Float){val before=camera.screenToWorld(sx,sy);camera.setZoom(camera.zoom*f);val after=camera.screenToWorld(sx,sy);camera.position.x+=before.x-after.x;camera.position.y+=before.y-after.y};fun rotate(delta:Float){camera.rotation+=delta}}
-
-class RenderEngineV2(private val maxSprites:Int=2048){
-    val camera=RenderV2Camera();val queue=RenderV2Queue();val textures=RenderV2TextureCache();val state=RenderV2StateCache();val batch=RenderV2Batcher(maxSprites);val picker=RenderV2Picker(camera);val viewport=RenderV2ViewportTools(camera);var culling=true;var frame=0L;private set
-    fun initialize(width:Int,height:Int){camera.resize(width,height);state.reset()}
-    fun beginFrame(){frame++;queue.clear();batch.begin()}
-    fun submit(command:RenderV2Command){queue.submit(command)}
-    fun prepare(){queue.sort();if(culling)queue.cull(camera)}
-    fun render(){queue.items().forEach(batch::add);batch.end()}
-    fun endFrame()=RenderV2FrameStats(frame,queue.size()+queue.culled,queue.size(),queue.culled,batch.batches,batch.batches)
-}
+class RenderEngineV2(private val maxSprites:Int=2048){val camera=RenderV2Camera();val queue=RenderV2Queue();val textures=RenderV2TextureCache();val state=RenderV2StateCache();val batch=RenderV2Batcher(maxSprites);val picker=RenderV2Picker(camera);val viewport=RenderV2ViewportTools(camera);var culling=true;var frame=0L;private set;fun initialize(width:Int,height:Int){camera.resize(width,height);state.reset()};fun beginFrame(){frame++;queue.clear();batch.begin()};fun submit(command:RenderV2Command){queue.submit(command)};fun prepare(){queue.sort();if(culling)queue.cull(camera)};fun render(){queue.items().forEach(batch::add);batch.end()};fun endFrame()=RenderV2FrameStats(frame,queue.size()+queue.culled,queue.size(),queue.culled,batch.batches,batch.batches)}
