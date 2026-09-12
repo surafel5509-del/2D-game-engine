@@ -27,7 +27,6 @@ class EngineClock(
         last = now
         accumulator += frameDelta
         stepsThisFrame = 0
-
         while (accumulator >= fixedDelta && stepsThisFrame < 8) {
             step(fixedDelta)
             accumulator -= fixedDelta
@@ -46,7 +45,7 @@ data class Camera2D(
     var minZoom = 0.05f
     var maxZoom = 20f
 
-    fun setZoom(value: Float) {
+    fun zoomTo(value: Float) {
         zoom = value.coerceIn(minZoom, maxZoom)
     }
 
