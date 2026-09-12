@@ -53,7 +53,7 @@ class CollisionDispatcher {
 /** Runtime facade. Editor data remains separate from the native simulation and can be hot-reloaded. */
 class Runtime2D {
     val clock = EngineClock()
-    val camera = Camera2D()
+    private val camera = Camera2D()
     val collisions = CollisionDispatcher()
     private val native = NativeEngine()
     private var running = false
