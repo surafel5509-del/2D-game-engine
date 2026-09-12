@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(nova_engine SHARED
     native_engine.cpp
     nova_runtime.cpp
+    nova_renderer.cpp
 )
 
 target_compile_options(nova_engine PRIVATE
@@ -18,3 +19,8 @@ target_compile_options(nova_engine PRIVATE
 )
 
 target_include_directories(nova_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(nova_engine PRIVATE
+    GLESv2
+    log
+)
