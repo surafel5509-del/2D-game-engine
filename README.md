@@ -1,41 +1,49 @@
 # Nova 2D Engine
 
-Android-first, Kotlin + C++ 2D game engine and in-app editor. The project is being built as a real engine architecture rather than a demo canvas.
+Android-first Kotlin + C++ 2D game engine and in-app editor. Nova is designed as a focused production toolchain: create scenes, author 2D gameplay, manage assets, preview, profile and export Android builds from one project.
 
-## Current editor
+## Editor
 - Touch-first dark editor workspace
 - Scene hierarchy and entity selection
-- 2D viewport, grid, move/rotate/scale tools
-- Inspector for transform/sprite/render/physics data
-- Play / stop state and runtime diagnostics
-- Demo scene on first launch
-- Asset and animation panels foundation
+- 2D viewport and grid
+- Transform tools and inspector
+- Play/stop workflow
+- Console and runtime diagnostics
 
-## Production engine architecture
+## Engine
 - Kotlin editor/application layer
 - C++ native runtime through JNI
 - Fixed-step deterministic simulation
-- Layer/mask collision foundation
-- Scene graph with parent/child nodes
-- Versioned JSON scene serialization
-- Undo/redo command system (200 actions)
-- Asset index with persistent metadata
-- Animation runtime clock and clips
-- Multi-layer tilemap data model
-- Material/shader configuration model
-- Particle emitter configuration
+- Dynamic/static/sensor bodies and collision layers/masks
+- Scene graph and versioned scene data
+- Undo/redo command history
+- Animation clips and timeline interpolation
+- Tilemap and particle data systems
+- Material/shader configuration
 - Input action mapping
-- Audio bus/mixer model
-- Persistent project settings
+- Audio service/mixer foundation
 
-## Target production feature set
-The architecture is intentionally being expanded toward a complete 2D toolchain: texture importing and atlases, GPU batching, materials/shaders, robust contacts/joints/sensors, character controllers, audio streaming/spatial SFX, prefabs, visual scripting, animation state machines, timeline/cutscenes, UI designer, profiler/debugger, remote inspection, automated tests and signed Android release builds.
+## Production suite
+- SHA-256 asset indexing/import records
+- Deterministic sprite-atlas packing
+- Prefab library
+- UI document/layout model and hit testing
+- Runtime diagnostics with rolling frame history
+- Project export manifest
+- Engine self-test suite
 
-## Build
-Android SDK 35, NDK 27.2.12479018, Java 17 and Gradle 8.10 are used by CI. GitHub Actions builds the debug APK and publishes it as an Actions artifact after a successful build.
+## Android release pipeline
+GitHub Actions builds:
+- Debug APK
+- Release APK
+- Release AAB
 
-## Status
-This repository is an active engine build. It is **not yet honestly labeled production-complete** until the remaining runtime/editor systems and release validation are finished. CI failures are treated as blockers rather than being hidden.
+The release pipeline intentionally does not store private signing keys. Configure a production Android keystore through protected CI secrets before publishing to an app store.
+
+## Quality status
+The repository contains the production architecture and release pipeline, but it is not falsely labeled as a 100% Unity-equivalent engine. Store-ready status still requires successful CI, device validation, native ABI checks, scene round-trip tests, Play Console validation and production signing.
+
+See `docs/PRODUCTION_READINESS.md` for the release gate.
 
 ## Repository
 https://github.com/surafel5509-del/2D-game-engine
