@@ -7,25 +7,21 @@ import org.junit.Test
 
 class ProductionRuntimeServicesTest {
     @Test fun animationLoopsAndAdvances() {
-        val player = SpriteAnimationPlayer()
-        val clip = AnimationClip("Run", mutableListOf(
-            AnimationFrame("a", 100), AnimationFrame("b", 100)
-        ), loop = true, speed = 1f)
-        player.play(clip)
-        assertEquals("a", player.update(0f))
-        assertEquals("b", player.update(100f))
-        assertEquals("a", player.update(100f))
+        val player = AnimationPlayer().add(AnimationClip("Run", listOf("a", "b"), 10f, PlaybackMode.LOOP))
+        player.play("Run", true)
+        assertEquals("a", player.frame())
+        player.update(.1f)
+        assertEquals("b", player.frame())
+        player.update(.1f)
+        assertEquals("a", player.frame())
         assertTrue(player.playing)
     }
 
     @Test fun nonLoopingAnimationStopsAtLastFrame() {
-        val player = SpriteAnimationPlayer()
-        val clip = AnimationClip("OneShot", mutableListOf(
-            AnimationFrame("a", 50), AnimationFrame("b", 50)
-        ), loop = false)
-        player.play(clip)
-        player.update(100f)
-        assertEquals("b", player.update(0f))
+        val player = AnimationPlayer().add(AnimationClip("OneShot", listOf("a", "b"), 10f, PlaybackMode.ONCE))
+        player.play("OneShot", true)
+        player.update(.2f)
+        assertEquals("b", player.frame())
         assertFalse(player.playing)
     }
 
