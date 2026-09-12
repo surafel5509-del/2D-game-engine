@@ -7,8 +7,8 @@ android {
         applicationId = "com.nova.engine"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "2.0.0"
         vectorDrawables { useSupportLibrary = true }
     }
     externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt") } }
@@ -25,3 +25,7 @@ android {
 }
 
 kotlin { jvmToolchain(17) }
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+}
