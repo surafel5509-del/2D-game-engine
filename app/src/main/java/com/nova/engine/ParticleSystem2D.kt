@@ -21,5 +21,5 @@ class ParticleEmitter2D(private val maxParticles:Int=512) {
         val it=particles.iterator(); while(it.hasNext()){val p=it.next();p.life-=dt;if(p.life<=0f){it.remove();continue};p.vy+=gravity*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.rotation+=dt*2f}
     }
     fun burst(count:Int,x:Float,y:Float){repeat(count.coerceAtMost(maxParticles-particles.size)){emit(x,y)}}
-    private fun emit(x:Float,y:Float){val a=(-spreadRadians/2f..spreadRadians/2f).random();val s=speed*(0.65f+Random.nextFloat()*0.7f);particles+=Particle2D(x,y,cos(a)*s,sin(a)*s,lifetime*(0.6f+Random.nextFloat()*0.8f),4f+Random.nextFloat()*8f)}
+    private fun emit(x:Float,y:Float){val a=Random.nextFloat()*spreadRadians-spreadRadians/2f;val s=speed*(0.65f+Random.nextFloat()*0.7f);particles+=Particle2D(x,y,cos(a)*s,sin(a)*s,lifetime*(0.6f+Random.nextFloat()*0.8f),4f+Random.nextFloat()*8f)}
 }
