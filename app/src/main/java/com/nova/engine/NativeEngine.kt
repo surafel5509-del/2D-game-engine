@@ -13,4 +13,12 @@ class NativeEngine {
     external fun step(dt: Float)
     external fun getTransforms(): FloatArray
     external fun clear()
+
+    external fun initializeRenderer(width: Int, height: Int): Boolean
+    external fun resizeRenderer(width: Int, height: Int)
+    external fun beginRenderer(r: Float = .08f, g: Float = .09f, b: Float = .12f, a: Float = 1f)
+    external fun submitRendererSprite(texture: Int, x: Float, y: Float, width: Float, height: Float, rotation: Float = 0f, pivotX: Float = .5f, pivotY: Float = .5f, u0: Float = 0f, v0: Float = 0f, u1: Float = 1f, v1: Float = 1f, r: Float = 1f, g: Float = 1f, b: Float = 1f, a: Float = 1f)
+    external fun endRenderer()
+    external fun rendererStats(): LongArray?
+    external fun shutdownRenderer()
 }
